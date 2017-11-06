@@ -18,8 +18,8 @@ import java.nio.file.Paths;
 @Execute(goal = "generate-client")
 public class RestAssuredClientGenerateMojo extends AbstractMojo {
 
-    @Parameter(defaultValue = "${project.build.resources[0].directory}/api.raml")
-    private String ramlFile;
+    @Parameter(defaultValue = "${project.build.resources[0].directory}/raml/")
+    private String ramlDir;
 
     @Parameter(required = true)
     private String basePackage;
@@ -35,7 +35,7 @@ public class RestAssuredClientGenerateMojo extends AbstractMojo {
         try {
             new RestAssuredRamlCodegen(
                     CodegenConfig.codegenConf()
-                            .withInputPath(Paths.get(ramlFile))
+                            .withInputPath(Paths.get(ramlDir))
                             .withBasePackage(basePackage)
                             .withOutputPath(Paths.get(outputDir))
             ).generate();
