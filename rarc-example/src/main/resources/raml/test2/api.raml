@@ -1,0 +1,248 @@
+#%RAML 0.8
+title: Example2
+baseUri: https://api.example.com
+traits: !include /traits.yaml
+/jsonapi:
+  is: [authorized-by-token]
+  get:
+    displayName: fetch
+    description: Fetch list
+    queryParameters:
+      default:
+        description: java reserved word "default"
+      if:
+        description: java reserved word "if"
+      enumparam:
+        description: enum parameter with one underscored
+        enum: [one, 2, underscored_param, for]
+      boolparam:
+        description: boolean parameter
+        type: boolean
+      required_param:
+        description: required string param
+        type: string
+        required: true
+      with_default_param:
+        description: param with default value
+        type: string
+        default: default value
+      _dotted_param.0:
+        description: param with dot and digit in name
+    responses:
+      200:
+        body:
+          application/json:
+            schema: !include schemas/groupResp.json
+  post:
+    description: Создание группы
+    body:
+      application/json:
+        schema: !include schemas/group.json
+    responses:
+      201:
+        description: |
+          Group is created
+      409:
+        description: Group is already exist
+      422:
+        description: Validation error
+  /{uri_param}:
+    uriParameters:
+      uri_param:
+        description: integer param
+        type: integer
+    delete:
+      description: Deletion
+      responses:
+        200:
+          description: Group is deleted
+        422:
+          description: Deletion is forbidden
+    get:
+      description: Get group data
+    patch:
+      description: Change group data
+      body:
+        application/json:
+          schema: !include schemas/group.json
+      responses:
+        200:
+          description: Data is changed.
+        422:
+          description: Validation error
+          body:
+            application/json:
+              schema: !include schemas/messageResp.json
+/rpc_api:
+  description: Some rpc deep api
+  /{uid}/:
+    uriParameters:
+      uid:
+        description: integer param
+        type: integer
+    /info/:
+      description: in the middle of the path - template, ends with slash
+      get:    
+  /password:
+    displayName: password
+    description: this lvl has display name
+    /submit:
+      displayName: submit
+      description: |
+        ## link
+        https://wiki.example.com/auth/#initialization
+      get:
+        queryParameters:
+          duplicated_param:
+            description: this param duplicated in get and post
+            required: true
+      post:
+        body:
+          application/x-www-form-urlencoded:
+            formParameters:
+              duplicated_param:
+                description: this param duplicated in post and get
+              form_param:
+                description: clean form param
+              enumparam_in_form:
+                description: enum parameter in form parameters should not became query parameter and contain underlines
+                enum: [one, 2, underscored_param, for]
+
+# NOT WORK YET
+#/xsd:
+#  post:
+#    body:
+#      text/xml:
+#        schema: !include xsd/status.xsd
+#    responses:
+#      200:
+#        body:
+#          text/xml:
+#            schema: !include xsd/status.xsd
+
+/hard_duplicate:
+  description: duplicate query and form params
+  get:
+    queryParameters:
+      duplicated_param:
+        description: this param duplicated in get
+        required: true
+      duplicated_param:
+        description: ooops another duplicate param in get2
+        required: true
+      query_param_1:
+        description: clean query param
+  post:
+    body:
+      application/x-www-form-urlencoded:
+        formParameters:
+          duplicated_param:
+            description: this param duplicated in post
+          duplicated_param:
+            description: ooops another duplicate param im post
+          form_param_1:
+            description: another clean form param
+  delete:
+    body:
+      application/x-www-form-urlencoded:
+        formParameters:
+          duplicated_param:
+            description: this param duplicated in delete
+          duplicated_param:
+            description: ooops another duplicate param in delete
+          form_param_2:
+            description: clean form param
+
+/objects_duplicate:
+  description: duplicate response objects
+  get:
+    description: get with duplicate response in post
+    responses:
+      200:
+        description: it's duplicate
+        body:
+          application/json:
+            schema: !include schemas/messageResp.json
+  post:
+    description: post with duplicate body and response
+    body:
+      application/json:
+        schema: !include schemas/messageResp.json
+    responses:
+      200:
+        description: it's duplicate
+        body:
+          application/json:
+            schema: !include schemas/messageResp.json
+
+/subfolder_schema_json:
+  get:
+    responses:
+      200:
+        body:
+          application/json:
+            schema: !include schemas/responses/schema.json
+  post:
+    body:
+      application/json:
+        schema: !include schemas/responses/schema2.json
+    responses:
+      200:
+        body:
+          application/json:
+            schema: !include schemas/responses/schema2.json
+
+
+/ref_schema_json:
+  description: generate with $ref
+  get:
+    description: schema with $ref
+    responses:
+      200:
+        description: $ref
+        body:
+          application/json:
+            schema: !include schemas/schema.json
+  post:
+    description: othershema.json
+    body:
+      application/json:
+        schema: !include schemas/schema.json
+    responses:
+      200:
+        description: it's duplicate
+        body:
+          application/json:
+            schema: !include schemas/otherschema.json
+# NOT WORK YET
+#  put:
+#    description: schema in resources
+#    body:
+#      application/json:
+#        schema: !include schema.json
+#    responses:
+#      200:
+#        body:
+#          application/json:
+#            schema: !include schema.json
+  /child_ref_shchema_json:
+    description: generate with $ref
+    get:
+      description: schema with $ref
+      responses:
+        200:
+          description: $ref
+          body:
+            application/json:
+              schema: !include schemas/schema2.json
+    post:
+      description: othershema.json
+      body:
+        application/json:
+          schema: !include schemas/schema.json
+      responses:
+        200:
+          description: it's duplicate
+          body:
+            application/json:
+              schema: !include schemas/otherschema.json
