@@ -45,6 +45,9 @@ public class RestAssuredRamlCodegen {
             return;
         }
 
+        String basePackage = codegenConfig.getBasePackage();
+        Path outputPath = codegenConfig.getOutputPath();
+
         Arrays.stream(files)
                 .filter(File::isDirectory)
                 .forEach(apiDirectory -> {
@@ -63,8 +66,8 @@ public class RestAssuredRamlCodegen {
                     ReqSpecField req = new ReqSpecField();
 
                     codegenConfig
-                            .withBasePackage(codegenConfig.getBasePackage() + "." + apiDirectory.getName())
-                            .withOutputPath(Paths.get(codegenConfig.getOutputPath() + "/" + apiDirectory.getName()));
+                            .withBasePackage(basePackage + "." + apiDirectory.getName())
+                            .withOutputPath(Paths.get(outputPath + "/" + apiDirectory.getName()));
                     try {
                         new RootApiClase(new NestedConfigClass(raml.getTitle(), baseReqSpec, req))
                                 .javaFile(raml, codegenConfig.getBasePackage())
