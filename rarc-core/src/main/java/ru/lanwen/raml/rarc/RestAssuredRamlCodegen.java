@@ -30,56 +30,29 @@ public class RestAssuredRamlCodegen {
 
     public void generate() {
         Path path = codegenConfig.getInputPath();
-        File inputDir = path.toFile();
-
         LOG.info("RAML: {}", path.toAbsolutePath());
-
-        if (!inputDir.exists()) {
-            LOG.error("Directory doesn't exist");
+        LOG.info("Output path: {}", codegenConfig.getOutputPath().toAbsolutePath());
+        if (path.endsWith(".raml")) {
+            LOG.warn("Wrong path - should end with .raml");
             return;
         }
 
-        File[] files = inputDir.listFiles();
-        if (files == null || files.length == 0) {
-            LOG.error("Can't find any directory with API");
-            return;
+        Raml raml = new RamlDocumentBuilder(new FileResourceLoader(path.getParent().toFile()))
+                .build(path.getFileName().toString());
+
+        ReqSpecSupplField baseReqSpec = new ReqSpecSupplField();
+        ReqSpecField req = new ReqSpecField();
+
+        try {
+            new RootApiClase(new NestedConfigClass(raml.getTitle(), baseReqSpec, req))
+                    .javaFile(raml, codegenConfig.getBasePackage())
+                    .writeTo(codegenConfig.getOutputPath());
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to read or write files");
         }
 
-        String basePackage = codegenConfig.getBasePackage();
-        Path outputPath = codegenConfig.getOutputPath();
-
-        Arrays.stream(files)
-                .filter(File::isDirectory)
-                .forEach(apiDirectory -> {
-                    Path apiPath = Paths.get(apiDirectory.getAbsolutePath() + "/api.raml");
-                    LOG.info("RAML: {}", apiPath.toAbsolutePath());
-
-                    if (!apiPath.toFile().exists()) {
-                        LOG.error("File doesn't exist");
-                        return;
-                    }
-
-                    Raml raml = new RamlDocumentBuilder(new FileResourceLoader(apiPath.getParent().toFile()))
-                            .build(apiPath.getFileName().toString());
-
-                    ReqSpecSupplField baseReqSpec = new ReqSpecSupplField();
-                    ReqSpecField req = new ReqSpecField();
-
-                    codegenConfig
-                            .withBasePackage(basePackage + "." + apiDirectory.getName())
-                            .withOutputPath(Paths.get(outputPath + "/" + apiDirectory.getName()));
-                    try {
-                        new RootApiClase(new NestedConfigClass(raml.getTitle(), baseReqSpec, req))
-                                .javaFile(raml, codegenConfig.getBasePackage())
-                                .writeTo(codegenConfig.getOutputPath());
-                    } catch (IOException e) {
-                        LOG.error("Не удалось записать файл " + codegenConfig.getOutputPath().toAbsolutePath(), e);
-                        return;
-                    }
-
-                    raml.getResources().values().parallelStream().forEach(resource -> {
-                        new ResourceClassBuilder().withCodegenConfig(codegenConfig).withResource(resource).withReq(req).generate();
-                    });
-                });
+        raml.getResources().values().parallelStream().forEach(resource -> {
+            new ResourceClassBuilder().withCodegenConfig(codegenConfig).withResource(resource).withReq(req).generate();
+        });
     }
 }
