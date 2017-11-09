@@ -8,8 +8,14 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 
 /**
  * @author lanwen (Merkushev Kirill)
@@ -17,9 +23,9 @@ import java.nio.file.Paths;
 @Mojo(name = "generate-client", defaultPhase = LifecyclePhase.GENERATE_SOURCES)
 @Execute(goal = "generate-client")
 public class RestAssuredClientGenerateMojo extends AbstractMojo {
-
+    private final Logger LOG = LoggerFactory.getLogger(RestAssuredClientGenerateMojo.class);
     @Parameter(defaultValue = "${project.build.resources[0].directory}/raml/")
-    private String ramlDir;
+    private String ramlDirPath;
 
     @Parameter(required = true)
     private String basePackage;
@@ -33,15 +39,39 @@ public class RestAssuredClientGenerateMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         try {
-            new RestAssuredRamlCodegen(
-                    CodegenConfig.codegenConf()
-                            .withInputPath(Paths.get(ramlDir))
-                            .withBasePackage(basePackage)
-                            .withOutputPath(Paths.get(outputDir))
-            ).generate();
+            Path ramlFolder = Paths.get(ramlDirPath);
+            if (!ramlFolder.toFile().exists()) {
+                throw new IllegalArgumentException("Could not found folder " + ramlDirPath);
+            }
+
+            File inputDir = ramlFolder.toFile();
+
+            File[] files = inputDir.listFiles();
+            if (files == null || files.length == 0) {
+                LOG.error("Can't find any directory with API");
+                return;
+            }
+
+            Arrays.stream(files)
+                    .filter(File::isDirectory)
+                    .forEach(apiDirectory -> {
+                        Path apiPath = Paths.get(apiDirectory.getAbsolutePath() + "/api.raml");
+                        LOG.info("RAML: {}", apiPath.toAbsolutePath());
+                        if (!apiPath.toFile().exists()) {
+                            LOG.error("File doesn't exist");
+                            return;
+                        }
+
+                        new RestAssuredRamlCodegen(
+                                CodegenConfig.codegenConf()
+                                        .withInputPath(apiPath)
+                                        .withBasePackage(basePackage)
+                                        .withOutputPath(Paths.get(outputDir))
+                        ).generate();
+
+                    });
 
             project.addCompileSourceRoot(outputDir);
-
         } catch (Exception e) {
             throw new MojoExecutionException("Exception while generating client.", e);
         }
