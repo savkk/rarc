@@ -26,6 +26,7 @@ public class AddJsonBodyMethod implements Method {
     private String packageForJsonGen;
     private String jsonSchemaPath;
     private String example;
+    private boolean shortJson;
 
     public static AddJsonBodyMethod bodyMethod() {
         return new AddJsonBodyMethod();
@@ -66,6 +67,11 @@ public class AddJsonBodyMethod implements Method {
         return this;
     }
 
+    public AddJsonBodyMethod withShortJson(boolean shortJson) {
+        this.shortJson = shortJson;
+        return this;
+    }
+
     @Override
     public MethodSpec methodSpec() {
         String bodyClassName = null;
@@ -85,13 +91,15 @@ public class AddJsonBodyMethod implements Method {
 
         ClassName schemaClassName = ClassName.get(packageForJsonGen, bodyClassName);
 
-        return MethodSpec.methodBuilder("with" + bodyClassName)
+        return MethodSpec.methodBuilder("with"  + (shortJson ? "Short" : "") + bodyClassName)
                 .addJavadoc("$L\n", example)
                 .addModifiers(Modifier.PUBLIC)
                 .addParameter(schemaClassName, "body")
                 .returns(ClassName.bestGuess(returnClassName))
                 .addStatement("$L.addHeader($S, $S)", reqName, "Content-Type", "application/json")
-                .addStatement("$L.setBody(new $T().serializeNulls().create().toJson(body))", reqName, GsonBuilder.class)
+                .addStatement("$L.setBody(new $T()"
+                        + (shortJson ? "." : ".serializeNulls().")
+                        + "create().toJson(body))", reqName, GsonBuilder.class)
                 .addStatement("return this", reqName)
                 .build();
     }
