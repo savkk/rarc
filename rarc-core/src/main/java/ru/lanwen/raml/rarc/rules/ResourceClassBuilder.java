@@ -114,7 +114,13 @@ public class ResourceClassBuilder {
     };
 
     Consumer<MimeType> applyBodyRule = mimeType -> {
-        new BodyRule().apply(mimeType, this);
+        if (BodyRule.MimeTypeEnum.JSON == BodyRule.MimeTypeEnum.byMimeType(mimeType)) {
+            RuleFactory ruleFactory = new RuleFactory(codegenConfig);
+            ruleFactory.getJsonBodyRule(true).apply(mimeType, this);
+            ruleFactory.getJsonBodyRule(false).apply(mimeType, this);
+        } else {
+            new BodyRule().apply(mimeType, this);
+        }
     };
 
     Consumer<Response> applyResponseRule = response -> {

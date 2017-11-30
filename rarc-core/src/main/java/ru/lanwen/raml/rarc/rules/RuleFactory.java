@@ -44,6 +44,12 @@ public class RuleFactory {
         return new BodyRule();
     }
 
+    public Rule<MimeType> getJsonBodyRule(boolean noNulls) {
+        JsonBodyRule bodyRule = new JsonBodyRule();
+        bodyRule.setShortJson(noNulls);
+        return bodyRule;
+    }
+
     public Rule<MimeType> getResponseRule() {
         return new ResponseRule();
     }
